@@ -1,31 +1,45 @@
-<video id="video" width="300" height="300" style="border: 1px solid gray"></video>
-<button id="capture">Capturar</button>
-<canvas id="canvas" width="300" height="300" style="display:none"></canvas>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escáner PDF417</title>
+</head>
+<body>
 
-<script src="https://cdn.jsdelivr.net/npm/@jvillalobos/jsPDF417@0.1.2/pdf417.min.js"></script>
-<script type="text/javascript">
+<div>
+    <video id="video" width="300" height="200" style="border: 1px solid gray;" autoplay></video>
+    <button id="capture">Capturar</button>
+    <canvas id="canvas" width="300" height="200" style="display:none;"></canvas>
+</div>
+
+<script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const captureButton = document.getElementById('capture');
     const ctx = canvas.getContext('2d');
+    const captureButton = document.getElementById('capture');
 
-    // Iniciar la cámara
+    // Solicitar acceso a la cámara
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(function(stream) {
-            video.srcObject = stream;
+            video.srcObject = stream;  // Mostrar la cámara en el elemento de video
+        })
+        .catch(function(err) {
+            console.error("Error al acceder a la cámara: " + err);
+            alert("No se puede acceder a la cámara. Asegúrate de haber dado los permisos necesarios.");
         });
 
-    // Capturar la imagen del video cuando se presiona el botón
+    // Capturar la imagen del video
     captureButton.addEventListener('click', function() {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Captura la imagen del video al canvas
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-        // Decodificar el código de barras
-        const result = pdf417Decoder.decode(imageData.data, canvas.width, canvas.height);
-        if (result && result.length > 0) {
-            alert('Código escaneado: ' + result[0]);
-        } else {
-            alert('No se pudo leer el código.');
-        }
+        // Aquí iría el código para decodificar la imagen usando pdf417Decoder o cualquier otra librería
+        // alert("Imagen capturada. Ahora podrías procesarla con un decodificador PDF417.");
+        alert("Imagen capturada.");
     });
 </script>
+
+</body>
+</html>
+
