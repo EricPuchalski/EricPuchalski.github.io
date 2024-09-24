@@ -3,94 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Asistencia con Cámara</title>
+    <title>Lector de DNI - Documento Argentino</title>
+    <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
     <style>
-        #scanner-container {
-            width: 100%;
-            max-width: 600px;
-            height: 400px;
-            margin: 0 auto;
-            border: 1px solid #ccc;
-        }
         video {
             width: 100%;
-            height: 100%;
+            height: auto;
+        }
+        #result {
+            font-size: 18px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Registrar Asistencia Escaneando DNI</h1>
+
+    <h1>Escanear Documento Argentino</h1>
+    <p>Apunta la cámara al código de barras del DNI.</p>
     
-    <!-- Botón para iniciar la cámara -->
-    <button id="startScan">Iniciar Escaneo</button>
+    <div id="video-container">
+        <video id="video" autoplay></video>
+    </div>
+    <div id="result">
+        <h3>Resultado:</h3>
+        <p id="dni"></p>
+    </div>
 
-    <!-- Contenedor donde se verá la transmisión de la cámara -->
-    <div id="scanner-container"></div>
-
-    <!-- Resultado del escaneo -->
-    <div id="resultado"></div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script>
-        document.getElementById('startScan').addEventListener('click', function() {
-            // Iniciar QuaggaJS para acceder a la cámara y escanear el código de barras
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-container'), // Mostrar la cámara en este div
-                    constraints: {
-                        width: 640,
-                        height: 480,
-                        facingMode: "environment" // Usa la cámara trasera
-                    }
-                },
-                decoder: {
-                    readers: ["code_128_reader"] // Decodificador para código de barras tipo 128
-                }
-            }, function(err) {
-                if (err) {
-                    console.log(err);
-                    return;
-                }
-                Quagga.start(); // Comienza el escaneo
-            });
-
-            // Detectar el código de barras cuando sea leído
-            Quagga.onDetected(function(result) {
-                const dni = result.codeResult.code; // Obtener el DNI escaneado
-                registrarAsistencia(dni); // Registrar asistencia con el DNI
-                Quagga.stop(); // Detener el escaneo
-            });
+        // Configuración de QuaggaJS para escanear el código de barras PDF417
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#video')    // Target video element
+            },
+            decoder: {
+                readers: ["pdf417_reader"] // Especificar el tipo de código de barras PDF417
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            console.log("QuaggaJS iniciado correctamente");
+            Quagga.start();
         });
 
-        // Función para registrar la asistencia usando el DNI
-        function registrarAsistencia(dni) {
-            const materiaId = 1; // Puedes cambiar esto según tu lógica
-            const tardanza = false; // Puedes ajustar según las reglas
+        // Función que procesa los resultados del escaneo
+        Quagga.onDetected(function(data) {
+            console.log(data);
+            
+            // Aquí los datos del código de barras serán procesados
+            if (data && data.codeResult && data.codeResult.code) {
+                const result = data.codeResult.code;
 
-            const asistenciaRequest = {
-                dni: dni,
-                materiaId: materiaId,
-                tardanza: tardanza
-            };
+                // Asumimos que el DNI se encuentra en un formato específico dentro del código escaneado
+                // Aquí deberás ajustar el formato para extraer correctamente el DNI
+                const dni = extraerDNI(result);
 
-            // Hacer el POST request al backend
-            fetch('http://localhost:8080/api/asistencias/registrar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(asistenciaRequest)
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('resultado').innerText = `Asistencia registrada para DNI: ${dni}`;
-            })
-            .catch(error => {
-                document.getElementById('resultado').innerText = `Error: ${error}`;
-            });
+                document.getElementById('dni').innerText = dni ? 'DNI: ' + dni : 'No se pudo extraer el DNI';
+                
+                // Mostrar un prompt con el DNI cuando se detecta un código de barras
+                prompt("Código de barras detectado. DNI extraído:", dni);
+
+                // Detenemos el escaneo una vez detectado el DNI
+                Quagga.stop();
+            }
+        });
+
+        // Función para extraer el DNI del código PDF417 (puedes ajustarlo dependiendo del formato exacto)
+        function extraerDNI(codigo) {
+            // Aquí, debes implementar la lógica específica para extraer el DNI del código PDF417.
+            // El DNI podría estar en una posición específica dentro del código de barras.
+
+            // Ejemplo básico (ajusta según sea necesario):
+            const regex = /\d{7,8}/;  // Asume que el DNI es un número de 7 u 8 dígitos
+            const match = codigo.match(regex);
+            return match ? match[0] : null;
         }
     </script>
+
 </body>
 </html>
