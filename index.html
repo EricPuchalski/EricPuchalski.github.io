@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escáner PDF417</title>
+    <title>Escáner PDF417 en Vivo</title>
+    <script src="path_to_jsPDF417_library.js"></script> <!-- Asegúrate de enlazar correctamente la librería -->
 </head>
 <body>
 
 <div>
     <video id="video" width="300" height="200" style="border: 1px solid gray;" autoplay></video>
-    <button id="capture">Capturar</button>
     <canvas id="canvas" width="300" height="200" style="display:none;"></canvas>
 </div>
 
@@ -17,27 +17,49 @@
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const captureButton = document.getElementById('capture');
 
-    // Solicitar acceso a la cámara
-    navigator.mediaDevices.getUserMedia({ video: true })
+    // Opciones para acceder a la cámara trasera
+    const constraints = {
+        video: {
+            facingMode: { exact: "environment" }  // Selecciona la cámara trasera
+        }
+    };
+
+    // Solicitar acceso a la cámara trasera
+    navigator.mediaDevices.getUserMedia(constraints)
         .then(function(stream) {
             video.srcObject = stream;  // Mostrar la cámara en el elemento de video
         })
         .catch(function(err) {
             console.error("Error al acceder a la cámara: " + err);
-            alert("No se puede acceder a la cámara. Asegúrate de haber dado los permisos necesarios.");
+            alert("No se puede acceder a la cámara trasera.");
         });
 
-    // Capturar la imagen del video
-    captureButton.addEventListener('click', function() {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Captura la imagen del video al canvas
+    // Función que procesa los frames de video y busca un código PDF417
+    function scanCode() {
+        // Dibujar el video en el canvas para obtener los datos de imagen
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-        // Aquí iría el código para decodificar la imagen usando pdf417Decoder o cualquier otra librería
-        // alert("Imagen capturada. Ahora podrías procesarla con un decodificador PDF417.");
-        alert("Imagen capturada.");
-    });
+        // Intentar decodificar el código PDF417 de la imagen actual
+        try {
+            const result = jsPDF417.decode(imageData.data, canvas.width, canvas.height); // Decodificación
+
+            if (result && result.length > 0) {
+                alert('Datos del código escaneado: ' + result[0]);  // Mostrar el resultado decodificado
+                // Detener el escaneo si encuentras un código
+                cancelAnimationFrame(scanId);
+            }
+        } catch (error) {
+            // Continuar escaneando si no se detecta un código válido
+            console.log('Intentando escanear...');
+        }
+
+        // Continuar escaneando en el siguiente frame
+        scanId = requestAnimationFrame(scanCode);
+    }
+
+    let scanId = requestAnimationFrame(scanCode);  // Iniciar el proceso de escaneo
 </script>
 
 </body>
