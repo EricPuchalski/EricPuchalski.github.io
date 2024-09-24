@@ -1,92 +1,26 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Asistencia con Cámara</title>
-    <style>
-        #scanner-container {
-            width: 100%;
-            max-width: 640px;
-            height: 480px;
-            margin: 0 auto;
-            border: 1px solid #ccc;
+<div>
+    <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script type="text/javascript">
+    // Inicializa el lector de código de barras
+    const codeReader = new ZXing.BrowserBarcodeReader();
+    
+    // Selecciona el elemento de video donde se mostrará la cámara
+    const videoElement = document.getElementById('video');
+
+    // Inicia el escaneo desde la cámara
+    codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+        if (result) {
+            // Muestra un alert con los datos escaneados
+            alert('Código escaneado: ' + result.text);
         }
-        video {
-            width: 100%;
-            height: 100%;
+
+        // Si hay un error, pero no es de tipo "No se encontró", lo muestra en la consola
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error(err);
         }
-    </style>
-</head>
-<body>
-    <h1>Registrar Asistencia Esaneando DNI</h1>
-    <button id="startScan">Iniciar Escaneo</button>
-    <div id="scanner-container"></div>
-    <div id="resultado"></div>
+    });
+</script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script>
-        document.getElementById('startScan').addEventListener('click', function() {
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-container'),
-                    constraints: {
-                        facingMode: "environment",
-                        width: 640,
-                        height: 480,
-                    }
-                },
-                decoder: {
-                    readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader"]
-                }
-            }, function(err) {
-                if (err) {
-                    console.log(err);
-                    return;
-                }
-                Quagga.start();
-            });
-
-            Quagga.onDetected(function(result) {
-                const dni = result.codeResult.code;
-                // Muestra una alerta con el código escaneado (DNI)
-                alert(`DNI detectado: ${dni}`);
-                
-                // Registrar asistencia con el DNI detectado
-                registrarAsistencia(dni);
-
-                // Detener Quagga para evitar múltiples lecturas
-                Quagga.stop();
-            });
-        });
-
-        function registrarAsistencia(dni) {
-            const materiaId = 1;
-            const tardanza = false;
-
-            const asistenciaRequest = {
-                dni: dni,
-                materiaId: materiaId,
-                tardanza: tardanza
-            };
-
-            fetch('http://localhost:8080/api/asistencias/registrar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(asistenciaRequest)
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('resultado').innerText = `Asistencia registrada para DNI: ${dni}`;
-            })
-            .catch(error => {
-                document.getElementById('resultado').innerText = `Error: ${error}`;
-            });
-        }
-    </script>
-</body>
-</html>
