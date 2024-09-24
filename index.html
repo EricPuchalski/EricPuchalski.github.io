@@ -3,65 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escáner PDF417 en Vivo</title>
-    <script src="path_to_jsPDF417_library.js"></script> <!-- Asegúrate de enlazar correctamente la librería -->
+    <title>Escáner DNI Argentino</title>
 </head>
 <body>
+    <h1>Escanear DNI Argentino</h1>
+    <video id="video" width="300" height="200" style="border: 1px solid black"></video>
+    <p id="resultado"></p>
+    
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
 
-<div>
-    <video id="video" width="300" height="200" style="border: 1px solid gray;" autoplay></video>
-    <canvas id="canvas" width="300" height="200" style="display:none;"></canvas>
-</div>
+        const codeReader = new ZXing.BrowserBarcodeReader();
+const videoElement = document.getElementById('video');
 
-<script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    // Opciones para acceder a la cámara trasera
-    const constraints = {
-        video: {
-            facingMode: { exact: "environment" }  // Selecciona la cámara trasera
-        }
-    };
-
-    // Solicitar acceso a la cámara trasera
-    navigator.mediaDevices.getUserMedia(constraints)
-        .then(function(stream) {
-            video.srcObject = stream;  // Mostrar la cámara en el elemento de video
-        })
-        .catch(function(err) {
-            console.error("Error al acceder a la cámara: " + err);
-            alert("No se puede acceder a la cámara trasera.");
-        });
-
-    // Función que procesa los frames de video y busca un código PDF417
-    function scanCode() {
-        // Dibujar el video en el canvas para obtener los datos de imagen
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        // Intentar decodificar el código PDF417 de la imagen actual
-        try {
-            const result = jsPDF417.decode(imageData.data, canvas.width, canvas.height); // Decodificación
-
-            if (result && result.length > 0) {
-                alert('Datos del código escaneado: ' + result[0]);  // Mostrar el resultado decodificado
-                // Detener el escaneo si encuentras un código
-                cancelAnimationFrame(scanId);
+navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then((stream) => {
+        videoElement.srcObject = stream;
+        videoElement.play();
+        return codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+            if (result) {
+                alert(`Datos del DNI: ${result.text}`);
+                document.getElementById('resultado').textContent = `Resultado: ${result.text}`;
             }
-        } catch (error) {
-            // Continuar escaneando si no se detecta un código válido
-            console.log('Intentando escanear...');
-        }
-
-        // Continuar escaneando en el siguiente frame
-        scanId = requestAnimationFrame(scanCode);
-    }
-
-    let scanId = requestAnimationFrame(scanCode);  // Iniciar el proceso de escaneo
-</script>
-
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+                console.error(err);
+            }
+        });
+    })
+    .catch((err) => {
+        console.error(err);
+    });
+    </script>
 </body>
 </html>
-
