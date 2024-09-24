@@ -1,26 +1,31 @@
-<div>
-    <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
-</div>
+<video id="video" width="300" height="200" style="border: 1px solid gray"></video>
+<button id="capture">Capturar</button>
+<canvas id="canvas" width="300" height="200" style="display:none"></canvas>
 
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@jvillalobos/jsPDF417@0.1.2/pdf417.min.js"></script>
 <script type="text/javascript">
-    // Inicializa el lector de código de barras
-    const codeReader = new ZXing.BrowserBarcodeReader();
-    
-    // Selecciona el elemento de video donde se mostrará la cámara
-    const videoElement = document.getElementById('video');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture');
+    const ctx = canvas.getContext('2d');
 
-    // Inicia el escaneo desde la cámara
-    codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-        if (result) {
-            // Muestra un alert con los datos escaneados
-            alert('Código escaneado: ' + result.text);
-        }
+    // Iniciar la cámara
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+            video.srcObject = stream;
+        });
 
-        // Si hay un error, pero no es de tipo "No se encontró", lo muestra en la consola
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-            console.error(err);
+    // Capturar la imagen del video cuando se presiona el botón
+    captureButton.addEventListener('click', function() {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        // Decodificar el código de barras
+        const result = pdf417Decoder.decode(imageData.data, canvas.width, canvas.height);
+        if (result && result.length > 0) {
+            alert('Código escaneado: ' + result[0]);
+        } else {
+            alert('No se pudo leer el código.');
         }
     });
 </script>
-
